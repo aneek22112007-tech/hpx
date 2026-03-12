@@ -240,15 +240,18 @@ namespace hpx::ranges {
             )
         // clang-format on
         friend hpx::parallel::util::detail::algorithm_result_t<ExPolicy,
-            FwdIter>
-        tag_fallback_invoke(hpx::ranges::shift_left_t, ExPolicy&& policy,
-            FwdIter first, Sent last, Size n)
+            FwdIter> tag_fallback_invoke(hpx::ranges::shift_left_t,
+            ExPolicy&& policy, FwdIter first, Sent last, Size n)
         {
             static_assert(std::forward_iterator<FwdIter>,
                 "Requires at least forward iterator.");
 
-            return hpx::parallel::detail::shift_left<FwdIter>().call(
-                HPX_FORWARD(ExPolicy, policy), first, last, n);
+            using is_seq = std::integral_constant<bool,
+                hpx::is_sequenced_execution_policy_v<ExPolicy> ||
+                    !std::bidirectional_iterator<FwdIter>>;
+
+            return hpx::parallel::detail::shift_left<FwdIter>().call2(
+                HPX_FORWARD(ExPolicy, policy), is_seq(), first, last, n);
         }
 
         template <typename Rng, typename Size>
@@ -285,9 +288,13 @@ namespace hpx::ranges {
             static_assert(std::forward_iterator<std::ranges::iterator_t<Rng>>,
                 "Requires at least forward iterator.");
 
+            using is_seq = std::integral_constant<bool,
+                hpx::is_sequenced_execution_policy_v<ExPolicy> ||
+                    !std::bidirectional_iterator<std::ranges::iterator_t<Rng>>>;
+
             return hpx::parallel::detail::shift_left<
                 std::ranges::iterator_t<Rng>>()
-                .call(HPX_FORWARD(ExPolicy, policy), std::begin(rng),
+                .call2(HPX_FORWARD(ExPolicy, policy), is_seq(), std::begin(rng),
                     std::end(rng), n);
         }
     } shift_left{};

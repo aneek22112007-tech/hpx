@@ -258,15 +258,18 @@ namespace hpx {
             )
         // clang-format on
         friend typename hpx::parallel::util::detail::algorithm_result<ExPolicy,
-            FwdIter>::type
-        tag_fallback_invoke(shift_left_t, ExPolicy&& policy, FwdIter first,
-            FwdIter last, Size n)
+            FwdIter>::type tag_fallback_invoke(shift_left_t, ExPolicy&& policy,
+            FwdIter first, FwdIter last, Size n)
         {
             static_assert(std::forward_iterator<FwdIter>,
                 "Requires at least forward iterator.");
 
-            return hpx::parallel::detail::shift_left<FwdIter>().call(
-                HPX_FORWARD(ExPolicy, policy), first, last, n);
+            using is_seq = std::integral_constant<bool,
+                hpx::is_sequenced_execution_policy_v<ExPolicy> ||
+                    !std::bidirectional_iterator<FwdIter>>;
+
+            return hpx::parallel::detail::shift_left<FwdIter>().call2(
+                HPX_FORWARD(ExPolicy, policy), is_seq(), first, last, n);
         }
     } shift_left{};
 }    // namespace hpx
