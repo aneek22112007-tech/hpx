@@ -160,7 +160,7 @@ namespace hpx {
         std::unique_lock<mutex_type> l(mtx_);
 
         threads::thread_id_type const self_id = threads::get_self_id();
-        if (owner_id_ != threads::invalid_thread_id)
+        while (owner_id_ != threads::invalid_thread_id)
         {
             threads::thread_restart_state const reason =
                 cond_.wait_until(l, abs_time, ec);
@@ -173,17 +173,15 @@ namespace hpx {
 
             if (reason == threads::thread_restart_state::timeout)    //-V110
             {
-                if (run_after)
-                    context_.after_try_lock(false);
-                return false;
+                break;
             }
+        }
 
-            if (owner_id_ != threads::invalid_thread_id)    //-V110
-            {
-                if (run_after)
-                    context_.after_try_lock(false);
-                return false;
-            }
+        if (owner_id_ != threads::invalid_thread_id)    //-V110
+        {
+            if (run_after)
+                context_.after_try_lock(false);
+            return false;
         }
 
         util::register_lock(this);
